@@ -20,39 +20,39 @@ redis:
 multi_models:
   # 对话模型配置
   conversation_model:
-    api_key: "sk-fc40dd0604f04142a******"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     model_name: "qwen-plus"
   # 工具调用/Function Call 模型配置
   tool_call_model:
-    api_key: "sk-fc40dd0604f04142a******"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     model_name: "qwen-plus"
   # 复杂推理模型配置
   reasoning_model:
-    api_key: "sk-6d47d94f4c734357******"
-    base_url: "https://api.deepseek.com/v1"
-    model_name: "deepseek-reasoner"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model_name: "qwen3.5-plus"
   # 文生图模型配置
   text2image:
-    api_key: "sk-fc40dd0604f04142a******"
-    base_url: "https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis"
-    model_name: "wanx2.0-t2i-turbo"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
+    base_url: "https://dashscope.aliyuncs.com/api/v1"
+    model_name: "qwen-image-2.0"
   # 多模态 (视觉) 模型配置
   qwen_vl:
-    api_key: "sk-fc40dd0604f04142a******"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    model_name: "qwen-vl-plus"
+    model_name: "qwen3-vl-plus"
 
   # Embedding 模型配置 (用于向量化)
   embedding:
-    api_key: "sk-fc40dd0604f04142a******"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
     model_name: "text-embedding-v4"
 
   # Rerank 模型配置 (用于重排序召回结果)
   rerank:
-    api_key: "sk-fc40dd0604f04142a******"
+    api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank"
     model_name: "gte-rerank-v2"
 
@@ -61,21 +61,22 @@ multi_models:
 tools:
   # 高德地图天气 API 配置
   weather:
-    api_key: "fac0ad465078da96a3ec6******"
+    api_key: "5972423faca1b91fea8c23b55aef46d0"
     endpoint: "https://restapi.amap.com/v3/weather/weatherInfo?parameters"
   # Tavily 联网搜索 API 配置 (注意配额限制)
   tavily:
-    api_key: "tvly-dev-RMf7KBCQLyXhn3******"
+    api_key: "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"
   # SerpApi 上的 Google Search API 配置
   google:
-    api_key: "cdc3b207606843b4c883849c3a0f833c************"
-  # 阿里云快递查询 API 配置
+    api_key: "ba45f8fc7a6abe0730318a5601fad3e0d819b1138d39d23fac369d4e27f59c8e"
+  # 阿里云快递查询 API 配置  
+  # https://market.aliyun.com/detail/cmapi021863?spm=5176.29867242_210807074.0.0.44e83e7exsrQCd
   delivery:
-    api_key: "df695c94fc644d******"
-    endpoint: "https://qyexpress.market.alicloudapi.com/composite/queryexpress"
+    api_key: "cf351f58729443098c03d56bec8895a0"
+    endpoint: "https://wuliu.market.alicloudapi.com/kdi"
   # BoCha 联网搜索 API 配置
   bocha:
-    api_key: "sk-**********************"
+    api_key: "sk-ea1c97d6c1324ce1a4e7dfbb81bc3c2c"
     endpoint: "https://api.bochaai.com/v1/web-search"
 
 # RAG (检索增强生成) 配置
@@ -86,7 +87,7 @@ rag:
 
   retrival:
     top_k: 5  # 知识库召回的最大数量
-    min_score: 0.2 # 知识库召回结果的最小相似度分数阈值
+    min_score: 0.5 # 知识库召回结果的最小相似度分数阈值
 
   split:
     chunk_size: 500 # 知识库文档分块的最大字符数
@@ -136,11 +137,11 @@ wechat_config:
 
 # 追踪工具 Langfuse 配置 (目前版本可能未应用)
 langfuse:
-  trace_name: "agentchat"
+  trace_name: "chatagent"
   host: "https://cloud.langfuse.com"
-  public_key: "pk-lf-q3e80e5f-da6d-40cb-8bc1-******" # Langfuse 公钥
-  secret_key: "sk-lf-q3e80e5f-da6d-40cb-8bc1-******" # Langfuse 私钥
-  user_id: "LiangTian" # 用户 ID
+  public_key: "pk-lf-32e79a41-1d23-4b89-b56e-6a2f12f04987" # Langfuse 公钥
+  secret_key: "sk-lf-d0309746-a48a-49e4-bbba-70d0396a4891" # Langfuse 私钥
+  user_id: "sgly33" # 用户 ID
 
 # 接口白名单路径
 whitelist_paths: ["/api/v1/mcp/*"]

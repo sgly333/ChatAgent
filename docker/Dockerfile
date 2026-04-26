@@ -63,6 +63,8 @@ COPY src/backend/uv.lock ./uv.lock
 
 # 安装依赖（基于 lock，保证稳定）
 RUN uv sync --frozen
+# Langfuse 当前为可选观测组件：单独安装，避免受 lock 文件影响
+RUN uv pip install --python .venv langfuse
 
 # 再复制代码（避免频繁失效缓存）
 COPY src/backend/ ./
@@ -77,5 +79,5 @@ ENV PYTHONUNBUFFERED=1
 # 暴露端口
 EXPOSE 7860
 
-# 启动服务
-CMD ["uvicorn", "agentchat.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# 启动服务（通过 uv 运行，确保使用 .venv 中的依赖与可执行文件）
+CMD ["uv", "run", "uvicorn", "agentchat.main:app", "--host", "0.0.0.0", "--port", "7860"]
