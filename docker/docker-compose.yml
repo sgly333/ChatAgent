@@ -5,6 +5,29 @@ networks:
     driver: bridge
 
 services:
+  # Milvus 向量数据库服务（standalone）
+  milvus:
+    container_name: agentchat-milvus
+    image: milvusdb/milvus:v2.4.4
+    command: ["milvus", "run", "standalone"]
+    restart: unless-stopped
+    environment:
+      ETCD_USE_EMBED: "true"
+      COMMON_STORAGETYPE: "local"
+      TZ: Asia/Shanghai
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    networks:
+      - agentchat-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      timeout: 20s
+      retries: 10
+
   # MySQL数据库服务
   mysql:
     container_name: agentchat-mysql
@@ -63,6 +86,8 @@ services:
 #      - ../data:/app/data
 #      - ../logs:/app/logs
     depends_on:
+      milvus:
+        condition: service_healthy
       mysql:
         condition: service_healthy
       redis:
@@ -127,6 +152,8 @@ services:
 
 # 数据卷配置
 volumes:
+  milvus_data:
+    driver: local
   mysql_data:
     driver: local
   redis_data:

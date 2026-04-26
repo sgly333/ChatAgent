@@ -100,7 +100,7 @@ rag:
   vector_db:
     host: "127.0.0.1"
     port: "19530"
-    mode: "chroma" # 向量库模式: standalone (Milvus), lite (轻量Milvus), chroma (ChromaDB)
+    mode: "standalone" # 向量库模式: standalone (Milvus), lite (轻量Milvus), chroma (ChromaDB)
 
 # 阿里云对象存储 OSS 配置
 storage:

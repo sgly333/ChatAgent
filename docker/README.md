@@ -110,16 +110,18 @@ multi_models:
 # RAG 向量数据库（如需使用知识库功能）
 rag:
   vector_db:
-    host: "your-milvus-host"
+    host: "milvus"
     port: "19530"
-    mode: "chroma"
+    mode: "standalone"
 
 # 对象存储（如需文件上传功能）
-aliyun_oss:
-  access_key_id: "your-access-key"
-  access_key_secret: "your-secret"
-  endpoint: "oss-cn-beijing.aliyuncs.com"
-  bucket_name: "your-bucket"
+storage:
+  mode: "minio"
+  minio:
+    endpoint: "minio:9000"
+    access_key_id: "minioadmin"
+    access_key_secret: "minioadmin"
+    bucket_name: "agentchat"
 ```
 
 ### 🔐 Docker 环境配置注意事项
@@ -128,8 +130,10 @@ aliyun_oss:
 
 1. **数据库主机名**：使用 `mysql` 而不是 `localhost`
 2. **Redis 主机名**：使用 `redis` 而不是 `localhost`
-3. **服务端口**：保持 `docker_config.yaml` 中的端口配置为 `7860`
-4. **API 密钥**：填写真实有效的 API 密钥
+3. **Milvus 主机名**：使用 `milvus` 而不是 `localhost`
+4. **MinIO 主机名**：使用 `minio` 而不是 `localhost`
+5. **服务端口**：保持 `docker_config.yaml` 中的端口配置为 `7860`
+6. **API 密钥**：填写真实有效的 API 密钥
 
 ---
 
@@ -155,6 +159,7 @@ graph TB
 | **backend**  | python:3.12-slim | FastAPI + uvicorn 应用 |
 |  **mysql**   | mysql:8.0 | 主数据库                 |
 |  **redis**   | redis:7.0-alpine | 缓存和会话存储              |
+|  **milvus**  | milvusdb/milvus:v2.4.4 | 向量数据库（RAG）          |
 |  **minio**   | minio:RELEASE.2023-03-20T20-16-18Z | 对象存储                 |
 
 ---
