@@ -3,10 +3,19 @@ from langchain_openai import ChatOpenAI
 from langchain_core.language_models import BaseChatModel
 from agentchat.core.models.embedding import EmbeddingModel
 from agentchat.core.models.reason_model import ReasoningModel
+from agentchat.core.callbacks.langfuse import get_langfuse_callback_handler
 from agentchat.settings import app_settings
 
 
 class ModelManager:
+
+    @classmethod
+    def _build_callbacks(cls) -> list:
+        callbacks = []
+        langfuse_callback = get_langfuse_callback_handler()
+        if langfuse_callback is not None:
+            callbacks.append(langfuse_callback)
+        return callbacks
 
     @classmethod
     def get_tool_invocation_model(cls, **kwargs) -> BaseChatModel:
@@ -16,7 +25,8 @@ class ModelManager:
             stream_usage=True,
             model=tool_call_model.model_name,
             api_key=tool_call_model.api_key,
-            base_url=tool_call_model.base_url
+            base_url=tool_call_model.base_url,
+            callbacks=cls._build_callbacks(),
         )
 
     @classmethod
@@ -27,7 +37,8 @@ class ModelManager:
             stream_usage=True,
             model=conversation_model.model_name,
             api_key=conversation_model.api_key,
-            base_url=conversation_model.base_url
+            base_url=conversation_model.base_url,
+            callbacks=cls._build_callbacks(),
         )
 
     @classmethod
@@ -48,7 +59,8 @@ class ModelManager:
             stream_usage=True,
             model=lingseek_intent_model.model_name,
             api_key=lingseek_intent_model.api_key,
-            base_url=lingseek_intent_model.base_url
+            base_url=lingseek_intent_model.base_url,
+            callbacks=cls._build_callbacks(),
         )
 
     @classmethod
@@ -59,7 +71,8 @@ class ModelManager:
             stream_usage=True,
             model=qwen_vl_model.model_name,
             api_key=qwen_vl_model.api_key,
-            base_url=qwen_vl_model.base_url
+            base_url=qwen_vl_model.base_url,
+            callbacks=cls._build_callbacks(),
         )
 
     @classmethod
@@ -70,7 +83,8 @@ class ModelManager:
             stream_usage=True,
             model=user_model.get("model"),
             api_key=user_model.get("api_key"),
-            base_url=user_model.get("base_url")
+            base_url=user_model.get("base_url"),
+            callbacks=cls._build_callbacks(),
         )
 
     @classmethod

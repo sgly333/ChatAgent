@@ -20,6 +20,8 @@ from agentchat.settings import app_settings
 from agentchat.utils.convert import convert_mcp_config
 from agentchat.core.agents.structured_response_agent import StructuredResponseAgent
 from agentchat.utils.helpers import get_provider_from_model
+from agentchat.database.session import session_getter
+from sqlmodel import select
 
 async def init_agentchat_system():
     """
@@ -53,6 +55,7 @@ async def init_agentchat_system():
         logger.info(f"Existing system detected ({len(agents)} agents), updating config...")
 
         await asyncio.gather(
+            _update_default_tools(),
             _update_exist_llm(),
             _update_mcp_server_into_mysql(True),
         )
@@ -102,6 +105,40 @@ async def _init_default_tools():
     ])
 
     logger.success("Default tools initialized")
+
+
+async def _update_default_tools():
+    """同步默认工具配置到数据库（仅更新系统默认工具的 name/描述/logo）"""
+    try:
+        tools = await load_json("./agentchat/config/tool.json")
+        with session_getter() as session:
+            for tool in tools:
+                display_name = tool.get("display_name")
+                if not display_name:
+                    continue
+
+                db_tool = session.exec(
+                    select(ToolTable).where(
+                        ToolTable.user_id == SystemUser,
+                        ToolTable.display_name == display_name,
+                    )
+                ).first()
+
+                # 如果库里没有这条（比如旧库缺失），跳过；首次启动会走 _init_default_tools
+                if not db_tool:
+                    continue
+
+                # 只更新与“模型调用/展示”相关的字段，避免破坏 tool_id 等关联
+                db_tool.name = tool.get("name") or db_tool.name
+                db_tool.description = tool.get("description") or db_tool.description
+                db_tool.logo_url = tool.get("logo_url") or db_tool.logo_url
+
+            session.add_all([])
+            session.commit()
+
+        logger.success("Default tools updated")
+    except Exception as err:
+        logger.error(f"Default tools update failed: {err}")
 
 
 async def _update_exist_llm():

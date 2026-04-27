@@ -1,4 +1,5 @@
 import io
+import json
 from minio import Minio
 from minio.error import S3Error
 from loguru import logger
@@ -16,6 +17,25 @@ class MinioClient:
         if not self.client.bucket_exists(self.bucket_name):
             self.client.make_bucket(self.bucket_name)
             logger.success(f"Minio Bucket: {self.bucket_name} created success")
+        self._ensure_public_read_policy()
+
+    def _ensure_public_read_policy(self):
+        """Allow anonymous read access for object rendering in web UI."""
+        try:
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"AWS": ["*"]},
+                        "Action": ["s3:GetObject"],
+                        "Resource": [f"arn:aws:s3:::{self.bucket_name}/*"],
+                    }
+                ],
+            }
+            self.client.set_bucket_policy(self.bucket_name, json.dumps(policy))
+        except S3Error as e:
+            logger.warning(f"Failed to set bucket public-read policy: {e}")
 
 
     def upload_file(self, object_name, data):
@@ -49,9 +69,7 @@ class MinioClient:
     def sign_url_for_get(self, object_name, expiration=3600):
         try:
             from datetime import timedelta
-            url = self.client.presigned_get_object(
-                self.bucket_name, object_name, expires=timedelta(seconds=expiration)
-            )
+            url = self.client.presigned_get_object(self.bucket_name, object_name, expires=timedelta(seconds=expiration))
             return url
         except S3Error as e:
             logger.error(f"Failed to generate GET URL for {object_name}: {e}")

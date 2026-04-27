@@ -53,5 +53,23 @@ async def init_app_settings(file_path: str = None):
 
             for key, value in data.items():
                 setattr(app_settings, key, value)
+
+            # Minimal debug info for config loading (no secrets)
+            try:
+                tools_loaded = app_settings.tools is not None
+                tools_keys = list(getattr(app_settings.tools, "__fields__", {}).keys()) if tools_loaded else []
+                delivery_cfg = getattr(app_settings.tools, "delivery", None) if tools_loaded else None
+                delivery_endpoint = None
+                delivery_appcode_tail4 = None
+                if isinstance(delivery_cfg, dict):
+                    delivery_endpoint = delivery_cfg.get("endpoint")
+                    ak = (delivery_cfg.get("api_key") or "")
+                    delivery_appcode_tail4 = ak[-4:] if ak else None
+                logger.info(
+                    f"Config loaded: tools_loaded={tools_loaded}, tools_keys={tools_keys}, "
+                    f"delivery_endpoint={delivery_endpoint}, delivery_appcode_tail4={delivery_appcode_tail4}"
+                )
+            except Exception as _e:
+                logger.warning(f"Config loaded but debug print failed: {_e}")
     except Exception as e:
         logger.error(f"Yaml file loading error: {e}")

@@ -1,7 +1,7 @@
 import { request } from '../utils/request'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const WORKSPACE_CHAT_PATH = '/api/v1/workspace/simple/chat'
 
 // 获取工作区插件列表
 export const getWorkspacePluginsAPI = async () => {
@@ -77,10 +77,10 @@ export const workspaceSimpleChatStreamAPI = async (
 
   console.log('=== workspaceSimpleChatStreamAPI 调用 ===')
   console.log('请求参数:', data)
-  console.log('请求 URL:', `${BASE_URL}/api/v1/workspace/simple/chat`)
+  console.log('请求 URL:', WORKSPACE_CHAT_PATH)
 
   try {
-    await fetchEventSource(`${BASE_URL}/api/v1/workspace/simple/chat`, {
+    await fetchEventSource(WORKSPACE_CHAT_PATH, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

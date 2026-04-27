@@ -1,5 +1,6 @@
 import copy
 import asyncio
+import re
 from loguru import logger
 from typing import List, Dict, Any
 from pydantic import BaseModel
@@ -227,6 +228,48 @@ class WorkSpaceSimpleAgent:
         except Exception as err:
             raise ValueError from err
         messages = user_messages + messages
+
+        # If tool already produced markdown image content, return it directly.
+        # This avoids a second LLM pass rewriting `![...](...)` into plain text links.
+        image_markdown_chunks: list[str] = []
+        image_pattern = re.compile(r"!\[[^\]]*\]\([^)]+\)")
+        for msg in messages:
+            if not isinstance(msg, ToolMessage):
+                continue
+            content_text = ""
+            if isinstance(msg.content, str):
+                content_text = msg.content
+            elif isinstance(msg.content, list):
+                # LangChain ToolMessage content may be rich blocks.
+                text_blocks = []
+                for item in msg.content:
+                    if isinstance(item, dict):
+                        txt = item.get("text")
+                        if isinstance(txt, str):
+                            text_blocks.append(txt)
+                    elif isinstance(item, str):
+                        text_blocks.append(item)
+                content_text = "\n".join(text_blocks)
+            if content_text and image_pattern.search(content_text):
+                image_markdown_chunks.append(content_text)
+
+        if image_markdown_chunks:
+            final_answer = "\n\n".join(image_markdown_chunks)
+            yield {
+                "event": "task_result",
+                "data": {
+                    "message": final_answer
+                }
+            }
+            await generate_title_task
+            title = generate_title_task.result() if generate_title_task.done() else None
+            await self._add_workspace_session(
+                title=title,
+                contexts=WorkSpaceSessionContext(
+                    query=user_messages[-1].content,
+                    answer=final_answer
+                ))
+            return
 
         final_answer = ""
         async for chunk in self.model.astream(input=messages, config={"callbacks": [usage_metadata_callback]}):
