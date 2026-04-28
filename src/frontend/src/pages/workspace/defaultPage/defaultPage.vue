@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/style.css"
 import { getWorkspacePluginsAPI, workspaceSimpleChatStreamAPI, type WorkSpaceSimpleTask } from '../../../apis/workspace'
+import { uploadFile as uploadFileAPI } from '../../../apis/chat'
 import { getVisibleLLMsAPI, type LLMResponse } from '../../../apis/llm'
 import { useUserStore } from '../../../store/user'
 
@@ -28,6 +29,8 @@ const webSearchEnabled = ref(false)
 const toolDropdownRef = ref<HTMLElement | null>(null)
 const mcpDropdownRef = ref<HTMLElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const attachments = ref<Array<{ name: string; url: string }>>([])
+const isUploadingAttachment = ref(false)
 const currentSessionId = ref<string>('')  // 当前会话ID
 const chatConversationRef = ref<HTMLElement | null>(null)  // 聊天容器引用
 const isGenerating = ref(false)  // 是否正在生成回复
@@ -143,17 +146,43 @@ const handleClickOutside = (e: MouseEvent) => {
 
 // 触发文件选择
 const triggerFileInput = () => {
+  if (isUploadingAttachment.value) return
   fileInputRef.value?.click()
 }
 
 // 处理文件选择
-const onFileChange = (e: Event) => {
+const onFileChange = async (e: Event) => {
   const input = e.target as HTMLInputElement
   const files = input.files
-  if (files && files.length > 0) {
-    ElMessage.success(`已选择 ${files.length} 个文件`)
+  if (!files || files.length === 0) {
+    if (input) input.value = ''
+    return
   }
-  if (input) input.value = ''
+
+  isUploadingAttachment.value = true
+  try {
+    ElMessage.info(`开始上传 ${files.length} 个文件...`)
+    for (const file of Array.from(files)) {
+      const resp = await uploadFileAPI(file)
+      const url = (resp as any)?.data
+      if (typeof url === 'string' && url) {
+        attachments.value.push({ name: file.name, url })
+        ElMessage.success(`文件 ${file.name} 上传成功`)
+      } else {
+        ElMessage.error(`文件 ${file.name} 上传失败：未返回URL`)
+      }
+    }
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('附件上传失败，请查看控制台错误')
+  } finally {
+    isUploadingAttachment.value = false
+    if (input) input.value = ''
+  }
+}
+
+const removeAttachment = (idx: number) => {
+  attachments.value.splice(idx, 1)
 }
 
 // 切换 MCP 服务器选择
@@ -197,12 +226,16 @@ const handleSend = async () => {
   }
   
   const query = inputMessage.value.trim()
+  const queryWithAttachments =
+    attachments.value.length > 0
+      ? `${query}\n\n附件链接：\n${attachments.value.map(a => `- ${a.name}: ${a.url}`).join('\n')}`
+      : query
   
   // 根据模式跳转到不同的页面
   if (selectedMode.value === 'lingseek') {
     // 灵寻模式：直接跳转到任务流程图页面（三列布局）
     console.log('跳转到灵寻任务页面')
-    console.log('query:', query)
+    console.log('query:', queryWithAttachments)
     console.log('tools:', selectedTools.value)
     console.log('webSearch:', webSearchEnabled.value)
     
@@ -212,7 +245,7 @@ const handleSend = async () => {
     router.push({
       name: 'taskGraphPage',
       query: {
-        query: query,
+        query: queryWithAttachments,
         tools: JSON.stringify(selectedTools.value),
         webSearch: webSearchEnabled.value.toString(),
         mcp_servers: JSON.stringify(selectedMcpServers.value)
@@ -222,7 +255,7 @@ const handleSend = async () => {
     // 日常模式：在本页进行对话（流式）
     console.log('=== 日常模式发送消息 ===')
     console.log('selectedModelId:', selectedModelId.value)
-    console.log('query:', query)
+    console.log('query:', queryWithAttachments)
     console.log('session_id:', currentSessionId.value)
     
     if (!selectedModelId.value) {
@@ -238,13 +271,15 @@ const handleSend = async () => {
 
     // 立即清空输入框，提升用户体验
     inputMessage.value = ''
+    // 发送后清空附件（避免下次复用）
+    attachments.value = []
     
     // 设置正在生成状态（转圈）
     isGenerating.value = true
 
     // 将用户消息加入消息列表
     console.log('将用户消息加入 messages')
-    messages.value.push({ role: 'user' as const, content: query })
+    messages.value.push({ role: 'user' as const, content: queryWithAttachments })
     
     // 自动滚动到底部
     scrollToBottom()
@@ -256,7 +291,7 @@ const handleSend = async () => {
 
     try {
       const payload: WorkSpaceSimpleTask = {
-        query,
+        query: queryWithAttachments,
         model_id: selectedModelId.value,
         plugins: selectedTools.value,
         mcp_servers: selectedMcpServers.value,
@@ -671,6 +706,13 @@ watch(
                 multiple
                 @change="onFileChange"
               />
+
+              <div v-if="attachments.length > 0" class="attachment-list" @click.stop>
+                <div class="attachment-item" v-for="(att, idx) in attachments" :key="att.url + idx">
+                  <a class="attachment-name" :href="att.url" target="_blank" rel="noopener">{{ att.name }}</a>
+                  <button class="attachment-remove" title="移除" @click="removeAttachment(idx)">×</button>
+                </div>
+              </div>
               
               <!-- 发送按钮 -->
               <button class="send-btn" :class="{ 'btn-disabled': isGenerating }" :disabled="isGenerating" @click="handleSend">
@@ -1345,6 +1387,50 @@ watch(
 
         .hidden-file-input {
           display: none;
+        }
+
+        .attachment-list {
+          position: absolute;
+          right: 56px;
+          bottom: 52px;
+          max-width: 320px;
+          padding: 8px;
+          background: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          z-index: 10;
+        }
+
+        .attachment-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          font-size: 12px;
+        }
+
+        .attachment-name {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #2563eb;
+          text-decoration: none;
+        }
+
+        .attachment-remove {
+          width: 18px;
+          height: 18px;
+          border-radius: 6px;
+          border: 1px solid #e5e7eb;
+          background: #f8f9fa;
+          cursor: pointer;
+          line-height: 16px;
+          padding: 0;
         }
 
         .upload-icon {

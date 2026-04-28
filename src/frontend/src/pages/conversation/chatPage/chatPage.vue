@@ -3,10 +3,10 @@ import { ref, onMounted, nextTick, watch, computed } from "vue"
 import { useRoute } from 'vue-router'
 import { MdPreview } from "md-editor-v3"
 import "md-editor-v3/lib/style.css"
-import { sendMessage, type Chat } from "../../../apis/chat"
+import { sendMessage, uploadFile, type Chat } from "../../../apis/chat"
 import { useHistoryChatStore } from "../../../store/history_chat_msg"
 import { useUserStore } from "../../../store/user"
-import { ElScrollbar, ElInput, ElButton, ElMessage, ElUpload, ElIcon } from "element-plus"
+import { ElScrollbar, ElInput, ElButton, ElMessage, ElIcon } from "element-plus"
 import { UploadFilled, Promotion, Loading, VideoPause, Check, Close } from '@element-plus/icons-vue'
 
 // Import static assets
@@ -37,6 +37,7 @@ const sendQuestion = ref(true)
 const historyChatStore = useHistoryChatStore()
 const userStore = useUserStore()
 const scrollbar = ref<InstanceType<typeof ElScrollbar>>()
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const route = useRoute()
 const abortCtrl = ref<AbortController | null>(null)
 const isCancelled = ref(false)
@@ -68,19 +69,33 @@ const checkActiveEvents = (chatItem: any) => {
   return chatItem.eventInfo.some((event: EventInfo) => event.status === 'START')
 }
 
-const handleUploadSuccess = (response: any, file: any, fileList: any) => {
-  ElMessage.success(`文件 ${file.name} 上传成功!`)
-  console.log(response)
-  // 保存上传成功返回的文件URL和文件名
-  if (response && response.data) {
-    fileUrl.value = response.data
-    fileName.value = file.name
+const doUploadFile = async (rawFile: File) => {
+  try {
+    const response = await uploadFile(rawFile)
+    ElMessage.success(`文件 ${rawFile.name} 上传成功!`)
+    if (response && response.data) {
+      fileUrl.value = response.data
+      fileName.value = rawFile.name
+    }
+  } catch (error: any) {
+    ElMessage.error(`文件 ${rawFile.name} 上传失败。`)
+    console.error(error)
   }
 }
 
-const handleUploadError = (error: any, file: any, fileList: any) => {
-  ElMessage.error(`文件 ${file.name} 上传失败.`)
-  console.error(error)
+const triggerFileSelect = () => {
+  if (fileUrl.value) return
+  ElMessage.info('请选择要上传的文件')
+  fileInputRef.value?.click()
+}
+
+const handleNativeFileChange = async (e: Event) => {
+  const input = e.target as HTMLInputElement | null
+  const rawFile = input?.files?.[0]
+  if (!rawFile) return
+  await doUploadFile(rawFile)
+  // reset input so selecting same file twice still triggers change
+  if (input) input.value = ''
 }
 
 // 取消上传的文件
@@ -433,17 +448,22 @@ watch(
     </div>
 
     <div class="input-area">
-      <el-upload
-        action="/api/v1/upload"
-        :on-success="handleUploadSuccess"
-        :on-error="handleUploadError"
-        :show-file-list="false"
+      <input
+        ref="fileInputRef"
+        type="file"
+        style="display: none"
+        @change="handleNativeFileChange"
+      />
+      <el-button
+        circle
+        class="action-btn"
+        :class="{ 'file-uploaded': fileUrl }"
         :disabled="!!fileUrl"
+        native-type="button"
+        @click.stop.prevent="triggerFileSelect"
       >
-        <el-button circle class="action-btn" :class="{ 'file-uploaded': fileUrl }">
-          <el-icon><UploadFilled /></el-icon>
-        </el-button>
-      </el-upload>
+        <el-icon><UploadFilled /></el-icon>
+      </el-button>
       <div class="input-wrapper">
         <!-- 已上传文件显示 -->
         <div v-if="fileUrl" class="uploaded-file-tag">

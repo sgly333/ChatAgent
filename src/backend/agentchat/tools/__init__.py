@@ -34,8 +34,12 @@ AgentToolsWithName = {
     "get_delivery_info": get_delivery_info,
     "text_to_image": text_to_image,
     "image_to_text": image_to_text,
+    # Historical/DB tool names compatibility:
+    # Some DB rows use function-style names like `convert_to_pdf`.
     "docx_to_pdf": convert_to_pdf,
+    "convert_to_pdf": convert_to_pdf,
     "pdf_to_docx": convert_to_docx,
+    "convert_to_docx": convert_to_docx,
     "bocha_search": bocha_search,
 }
 

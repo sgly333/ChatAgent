@@ -63,6 +63,17 @@ async def workspace_simple_chat(simple_task: WorkSpaceSimpleTask,
     set_agent_name_context(UsageStatsAgentType.simple_agent)
 
     model_config = await LLMService.get_llm_by_id(simple_task.model_id)
+    # Debug visibility: confirm which plugin tool IDs the frontend sent.
+    try:
+        tool_names = await ToolService.get_tool_name_by_id(simple_task.plugins or [])
+    except Exception as err:
+        tool_names = []
+        # Keep serving even if tool resolution fails.
+        from loguru import logger
+        logger.warning(f"Failed to resolve tool names from ids: {err}")
+
+    from loguru import logger
+    logger.info(f"workspace_simple_chat plugins(ids)={simple_task.plugins}, resolved_names={tool_names}")
     servers_config = []
     for mcp_id in simple_task.mcp_servers:
         mcp_server = await MCPService.get_mcp_server_from_id(mcp_id)

@@ -19,13 +19,16 @@ async def upload_file(
     try:
         file_content = await file.read()
 
-        oss_object_name = get_object_storage_base_path(file.filename)
-        sign_url = urljoin(app_settings.storage.active.base_url, oss_object_name)
+        object_name = get_object_storage_base_path(file.filename)
+        storage_client.upload_file(object_name, file_content)
 
-        storage_client.sign_url_for_get(sign_url)
-        storage_client.upload_file(oss_object_name, file_content)
+        # MinIO 使用可访问的 base_url 返回稳定对象地址。
+        if app_settings.storage.mode == "minio":
+            file_url = urljoin(f"{app_settings.storage.active.base_url.rstrip('/')}/", object_name)
+        else:
+            file_url = storage_client.sign_url_for_get(object_name)
 
-        return resp_200(sign_url)
+        return resp_200(file_url)
     except Exception as err:
         logger.error(f"上传文件{file.filename}出错：{err}")
         return resp_500(message=str(err))
