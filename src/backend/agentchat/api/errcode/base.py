@@ -8,7 +8,9 @@ class BaseErrorCode:
     Code: int
     Msg: str
 
-    @classmethod
+    # @classmethod 把方法绑定到类本身，而不是实例对象。
+    @classmethod 
+    # self 是“当前对象”，cls 是“当前类”。
     def return_resp(cls, msg: str = None, data: any = None) -> UnifiedResponseModel:
         return UnifiedResponseModel(status_code=cls.Code, status_message=msg or cls.Msg, data=data)
 

@@ -29,17 +29,19 @@ def get_langfuse_callback_handler() -> Optional[Any]:
         return None
 
     try:
-        from langfuse.callback import CallbackHandler
+        from langfuse import Langfuse
+        from langfuse.langchain import CallbackHandler
     except Exception as err:  # pragma: no cover
         logger.warning(f"Langfuse config found, but langfuse package is unavailable: {err}")
         return None
 
     try:
-        _langfuse_handler = CallbackHandler(
+        Langfuse(
             host=host,
             public_key=public_key,
             secret_key=secret_key,
         )
+        _langfuse_handler = CallbackHandler(public_key=public_key)
         logger.info("Langfuse callback handler enabled.")
         return _langfuse_handler
     except Exception as err:

@@ -9,6 +9,9 @@ from agentchat.schemas.mcp import MCPSSEConfig, MCPWebsocketConfig, MCPStreamabl
 
 
 def convert_langchain_tool_calls(tool_calls: List[ChatCompletionMessageToolCall]):
+    """"
+        将OpenAI的工具调用转换为Langchain的工具调用
+    """
     if not tool_calls:
         return []
 
@@ -20,8 +23,13 @@ def convert_langchain_tool_calls(tool_calls: List[ChatCompletionMessageToolCall]
     return langchain_tool_calls
 
 def convert_mcp_config(servers_info: dict | list):
-
+    """
+        将MCP配置转换为Langchain的MCP配置
+    """
     def convert_single_mcp(server_info):
+        """
+            将单个MCP配置转换为Langchain的MCP配置
+        """
         if isinstance(server_info, dict):
             if server_info.get("type") == "sse":
                 return MCPSSEConfig(
@@ -51,6 +59,9 @@ def convert_mcp_config(servers_info: dict | list):
 
 
 def mcp_tool_to_args_schema(name, description, args_schema) -> dict:
+    """
+        将MCP工具转换为Langchain的工具参数
+    """
     return {
         "type": "function",
         "function": {
@@ -83,6 +94,7 @@ def function_to_args_schema(func) -> dict:
     }
 
     try:
+        # inspect 是标准库里的一个模块，用来在运行时查看对象“长什么样”：函数签名、参数、源码位置、是否是协程、类的成员等。
         signature = inspect.signature(func)
     except ValueError as e:
         raise ValueError(

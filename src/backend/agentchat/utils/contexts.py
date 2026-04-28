@@ -6,6 +6,7 @@ from typing import Optional, Union
 
 
 # 请求跟踪 ID, 中间件设置,
+# ：就是先声明类型
 trace_id: ContextVar[Optional[str]] = ContextVar("trace_id", default=None)
 
 # 唯一ID, 区分与trace_id, trace_id多个系统间复用, unique_id 用于会话消息上下游处理
@@ -21,6 +22,7 @@ def get_trace_id_context() -> str:
     """
     获取 trace_id
     """
+    # := 叫 海象运算符 它的意思是：在表达式里同时“赋值”并“使用这个值”。
     if (tid := trace_id.get()) is None:
         raise ValueError("trace_id context not initialized")
     return tid
