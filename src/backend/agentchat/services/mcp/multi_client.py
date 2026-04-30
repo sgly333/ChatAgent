@@ -39,6 +39,7 @@ ASYNC_CONTEXT_MANAGER_ERROR = (
 )
 
 
+# 一个入口管理多个 MCP Server 的连接与能力加载
 class MultiServerMCPClient:
     """Client for connecting to multiple MCP servers.
 
@@ -92,6 +93,8 @@ class MultiServerMCPClient:
             connections if connections is not None else {}
         )
 
+    #@asynccontextmanager 的作用是：把一个“包含 yield 的 async 函数”变成可用于 
+    # async with 的异步上下文管理器。
     @asynccontextmanager
     async def session(
         self,
@@ -123,6 +126,7 @@ class MultiServerMCPClient:
             if auto_initialize:
                 await session.initialize()
             yield session
+
 
     async def get_tools(self, *, server_name: str | None = None) -> list[BaseTool]:
         """Get a list of all tools from all connected servers.

@@ -1,7 +1,7 @@
 from typing import Any, TypeVar, Generic, Union
 from pydantic import BaseModel
 
-# 创建泛型变量
+# 创建泛型变量  支持所有类型
 DataT = TypeVar('DataT')
 
 

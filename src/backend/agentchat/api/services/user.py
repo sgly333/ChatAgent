@@ -90,6 +90,7 @@ class UserService:
             avatars_url.append(f"{app_settings.storage.active.base_url}/{file_url}")
         return random.choice(avatars_url) if avatars_url else ""
 
+    # 获取所有可用的用户头像
     @classmethod
     def get_available_avatars(cls):
         files_url = storage_client.list_files_in_folder("icons/user")
@@ -112,6 +113,8 @@ class UserService:
         user = UserDao.get_user_by_username(user_name)
         return user.user_id
 
+# 这里 Depends() 为空，表示用参数的类型注解来推断依赖。
+# 主要做鉴权，如果用户没有登录，则返回401
 async def get_login_user(request: Request, authorize: AuthJWT = Depends()) -> UserPayload:
     """
     获取当前登录的用户

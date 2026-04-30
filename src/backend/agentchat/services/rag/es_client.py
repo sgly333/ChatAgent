@@ -49,7 +49,7 @@ class ESClient:
             hits = response['hits']
             if not hits.get("max_score"):
                 return documents
-            for hit in hist.get("hits", []):
+            for hit in hits.get("hits", []):
                 documents.append(
                     SearchModel(
                         score=hit['_score'], chunk_id=hit['_source']['chunk_id'],

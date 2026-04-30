@@ -14,6 +14,10 @@ class MCPManager:
     def __init__(self, mcp_configs: List[MCPBaseConfig], timeout=10):
 
         connection_info = {
+            # 转化为字典
+            # key: server_name
+            # value: mcp_config.model_dump(exclude={"server_name", "personal_config"})
+            # exclude: 排除 server_name 和 personal_config 字段
             mcp_config.server_name: mcp_config.model_dump(exclude={"server_name", "personal_config"})
             for mcp_config in mcp_configs
         }

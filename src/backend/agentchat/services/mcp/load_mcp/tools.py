@@ -72,9 +72,11 @@ async def _list_all_tools(session: ClientSession) -> list[MCPTool]:
     Raises:
         RuntimeError: If maximum iterations exceeded while listing tools.
     """
+    # 当前游标
     current_cursor: str | None = None
+    # 所有工具
     all_tools: list[MCPTool] = []
-
+    # 迭代次数
     iterations = 0
 
     while True:

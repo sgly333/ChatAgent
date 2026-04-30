@@ -7,6 +7,7 @@ from agentchat.settings import app_settings
 
 tavily_client = TavilyClient(app_settings.tools.tavily.get("api_key"))
 
+# 从函数的 docstring 自动解析工具说明和参数说明
 @tool("web_search", parse_docstring=True)
 def tavily_search(query: str,
                   topic: Optional[str],

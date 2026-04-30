@@ -36,6 +36,8 @@ class AuthJWT(AuthConfig):
                 auth = req.headers.get(self._header_name.lower())
                 if auth: self._get_jwt_from_headers(auth)
 
+    #  "AuthJWT"意思是：这个方法返回 AuthJWT 类型
+    #  这是一种前向引用的写法，用于在方法内部引用还未定义的类。
     def _get_jwt_from_headers(self,auth: str) -> "AuthJWT":
         """
         Get token from the headers

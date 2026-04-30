@@ -25,6 +25,8 @@ class Settings(BaseSettings):
 app_settings = Settings()
 
 async def init_app_settings(file_path: str = None):
+    # global 关键字用于声明一个全局变量
+    # 代表 这个名字用的是外部（模块级）变量，不是我函数自己的局部变量
     global app_settings
 
     file_path = file_path or "agentchat/config.yaml"
@@ -37,6 +39,8 @@ async def init_app_settings(file_path: str = None):
 
             # 特殊处理multi_models配置
             if "multi_models" in data:
+                # **data["multi_models"] 的意思是把字典拆成关键字参数
+                # 然后传递给 MultiModels 类进行初始化
                 data["multi_models"] = MultiModels(**data["multi_models"])
 
             if "tools" in data:
@@ -51,6 +55,7 @@ async def init_app_settings(file_path: str = None):
             if "server" in data:
                 data["server"] = ServerConfig(**data["server"])
 
+            # 将配置数据设置到app_settings中
             for key, value in data.items():
                 setattr(app_settings, key, value)
 

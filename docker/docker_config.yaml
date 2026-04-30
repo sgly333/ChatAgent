@@ -22,12 +22,12 @@ multi_models:
   conversation_model:
     api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    model_name: "qwen-plus"
+    model_name: "qwen3.5-plus"
   # 工具调用/Function Call 模型配置
   tool_call_model:
     api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    model_name: "qwen-plus"
+    model_name: "qwen3.5-plus"
   # 复杂推理模型配置
   reasoning_model:
     api_key: "sk-a8b3bad9803f490bbdb6e41f3fa1d5a8"

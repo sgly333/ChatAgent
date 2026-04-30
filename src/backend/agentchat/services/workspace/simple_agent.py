@@ -66,12 +66,11 @@ class WorkSpaceSimpleAgent:
         self.mcp_tools = []
         self.mcp_configs = mcp_configs
         self.tools = []
+        # .model_dump() 是 Pydantic 里把模型对象转成 dict 的方法。
         self.mcp_manager = MCPManager(convert_mcp_config([mcp_config.model_dump() for mcp_config in mcp_configs]))
         self.plugins = plugins
         self.session_id = session_id
-
         self.user_id = user_id
-
         # Find user config by server name
         self.server_dict: dict[str, Any] = {}
 
@@ -107,6 +106,7 @@ class WorkSpaceSimpleAgent:
         )
 
     async def setup_middlewares(self):
+        # 作用是把下面这个函数注册成 工具调用中间件 
         @wrap_tool_call
         async def handler_call_mcp_tool(
             request: ToolCallRequest,
@@ -114,6 +114,7 @@ class WorkSpaceSimpleAgent:
         ) -> ToolMessage | Command:
             if self.is_mcp_tool(request.tool_call["name"]):
                 # 针对鉴权的MCP Server需要用户的单独配置，例如飞书、邮箱
+                # 这个就是查找用户对某个MCP Server的单独配置
                 mcp_config = await MCPUserConfigService.get_mcp_user_config(self.user_id, self.get_mcp_id_by_tool(request.tool_call["name"]))
                 request.tool_call["args"].update(mcp_config)
                 tool_result = await handler(request)
@@ -212,10 +213,17 @@ class WorkSpaceSimpleAgent:
             await self.init_simple_agent()
         user_messages = copy.deepcopy(messages)
 
+        # 创建一个异步任务，用于生成标题
         generate_title_task = asyncio.create_task(self._generate_title(user_messages[-1].content))
         try:
             react_agent_task = None
             if self.tools and len(self.tools) != 0:
+                # 调用 react_agent 的 ainvoke 方法
+                # ainvoke 指 async invoke（异步调用）
+                # 这里传入了两个参数：
+                # 1. input={"messages": messages} 是输入参数，表示要传递给 react_agent 的消息
+                # 2. config={"callbacks": [usage_metadata_callback]} 是配置参数，表示要传递给 react_agent 的回调函数
+                # 这里的回调函数是 usage_metadata_callback，它是一个回调函数，用于记录模型的使用情况
                 react_agent_task = asyncio.create_task(self.react_agent.ainvoke(input={"messages": messages}, config={"callbacks": [usage_metadata_callback]}))
 
             # Wait for tool execution to complete
@@ -226,7 +234,9 @@ class WorkSpaceSimpleAgent:
                 messages = [msg for msg in messages if
                             isinstance(msg, ToolMessage) or (isinstance(msg, AIMessage) and msg.tool_calls)]
         except Exception as err:
-            raise ValueError from err
+            # Preserve the original exception context for debugging.
+            logger.exception("WorkSpaceSimpleAgent.astream failed during tool invocation")
+            raise ValueError(f"WorkSpaceSimpleAgent.astream failed: {err}") from err
         messages = user_messages + messages
 
         # If tool already produced markdown image content, return it directly.

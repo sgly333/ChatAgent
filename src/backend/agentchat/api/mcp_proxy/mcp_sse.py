@@ -31,6 +31,8 @@ def get_session_manager(request: Request) -> SessionManager:
 async def sse_endpoint(
     server_key: str,
     request: Request,
+    # Depends 是 FastAPI 的一个装饰器，用来依赖注入 SessionManager 实例
+    # 函数调用时无需传入这个参数，FastAPI 会自动注入
     sm: SessionManager = Depends(get_session_manager),
 ):
     if not check_auth(request):
@@ -46,13 +48,14 @@ async def sse_endpoint(
     queue: asyncio.Queue = asyncio.Queue()
     _active_sessions[session_id] = queue
     await queue.put({"event": "endpoint", "data": f"/mcp/{server_key}/message?sessionId={session_id}"})
-
     async def event_generator() -> AsyncGenerator[dict, None]:
         try:
             while True:
                 if await request.is_disconnected():
                     break
                 try:
+                    # 把一个普通函数变成生成器函数，并在执行到 yield 时暂停函数，
+                    # 返回一个值；下次继续执行时，从暂停的位置接着运行。
                     item = await asyncio.wait_for(queue.get(), timeout=30.0)
                     yield item
                 except asyncio.TimeoutError:
@@ -70,6 +73,8 @@ async def sse_endpoint(
 async def message_endpoint(
     server_key: str,
     request: Request,
+    # Query 是 FastAPI 用来声明“这个参数来自 URL 查询参数（query string）”
+    # alias="sessionId" 表示 URL 中的 sessionId 参数会映射到 session_id 参数
     session_id: str = Query(..., alias="sessionId"),
     sm: SessionManager = Depends(get_session_manager),
 ):

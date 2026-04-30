@@ -48,6 +48,8 @@ class WorkSpaceSessionDao:
         return workspace_session
 
     @classmethod
+    # 根据 session_id 获取工作台会话
+    # 这是“根据会话 ID 读会话”的最基础 DAO 方法。
     async def get_workspace_session_from_id(cls, session_id):
         async with async_session_getter() as session:
             workspace_session = await session.get(WorkSpaceSession, session_id)

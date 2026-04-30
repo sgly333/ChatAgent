@@ -8,6 +8,7 @@ from agentchat.services.rag.rerank import Reranker
 from agentchat.settings import app_settings
 
 class RagHandler:
+    RRF_K = 60
 
     @classmethod
     async def query_rewrite(cls, query):
@@ -24,32 +25,44 @@ class RagHandler:
 
     @classmethod
     async def mix_retrival_documents(cls, query_list, knowledges_id, search_field="summary"):
+        if not app_settings.rag.enable_elasticsearch:
+            return await MixRetrival.retrival_milvus_documents(query_list, knowledges_id, search_field)
 
-        if app_settings.rag.enable_elasticsearch:
-            es_documents, milvus_documents = await MixRetrival.mix_retrival_documents(query_list, knowledges_id, search_field)
-            # 先对ES和Milvus结果分别排序
-            es_documents.sort(key=lambda x: x.score, reverse=True)
-            milvus_documents.sort(key=lambda x: x.score, reverse=True)
-            all_documents = es_documents + milvus_documents
-        else:
-            all_documents = await MixRetrival.retrival_milvus_documents(query_list, knowledges_id, search_field)
+        es_documents, milvus_documents = await MixRetrival.mix_retrival_documents(
+            query_list, knowledges_id, search_field
+        )
+        return cls._fuse_by_rrf(es_documents, milvus_documents, top_n=20)
 
-        # 合并并去重，保留分数更高的文档
-        documents = []
-        seen_chunk_ids = set()
+    @classmethod
+    def _fuse_by_rrf(cls, es_documents, milvus_documents, top_n: int = 20):
+        """
+        使用 Reciprocal Rank Fusion 融合 BM25(ES) 与向量检索(Milvus)结果。
+        RRF score = Σ 1 / (k + rank)
+        """
+        fused_score_by_chunk = {}
+        representative_doc_by_chunk = {}
 
-        # 按分数从高到低排序
-        all_documents.sort(key=lambda x: x.score, reverse=True)
-        
-        # 去重，保留分数最高的
-        for doc in all_documents:
-            if doc.chunk_id not in seen_chunk_ids:
-                seen_chunk_ids.add(doc.chunk_id)
-                documents.append(doc)
-                if len(documents) >= 10:  # 限制返回10个文档
-                    break
-        
-        return documents
+        # ES 结果：分数越高越靠前（BM25）
+        es_ranked = sorted(es_documents, key=lambda x: x.score, reverse=True)
+        for rank, doc in enumerate(es_ranked, start=1):
+            chunk_id = doc.chunk_id
+            fused_score_by_chunk[chunk_id] = fused_score_by_chunk.get(chunk_id, 0.0) + 1.0 / (cls.RRF_K + rank)
+            representative_doc_by_chunk.setdefault(chunk_id, doc)
+
+        # Milvus 结果：L2 距离越低越靠前
+        milvus_ranked = sorted(milvus_documents, key=lambda x: x.score)
+        for rank, doc in enumerate(milvus_ranked, start=1):
+            chunk_id = doc.chunk_id
+            fused_score_by_chunk[chunk_id] = fused_score_by_chunk.get(chunk_id, 0.0) + 1.0 / (cls.RRF_K + rank)
+            representative_doc_by_chunk.setdefault(chunk_id, doc)
+
+        ranked_chunk_ids = sorted(
+            fused_score_by_chunk.keys(),
+            key=lambda cid: fused_score_by_chunk[cid],
+            reverse=True
+        )[:top_n]
+
+        return [representative_doc_by_chunk[cid] for cid in ranked_chunk_ids]
 
     @classmethod
     async def rag_query_summary(cls, query, knowledges_id, min_score: Optional[float]=None,

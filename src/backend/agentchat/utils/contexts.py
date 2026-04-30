@@ -4,6 +4,8 @@
 from contextvars import ContextVar
 from typing import Optional, Union
 
+# contextvar（contextvars 模块）是 Python 里的上下文局部变量机制。
+#可以理解成“在并发环境下安全的全局变量”。
 
 # 请求跟踪 ID, 中间件设置,
 # ：就是先声明类型

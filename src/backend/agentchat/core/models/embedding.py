@@ -9,7 +9,7 @@ class EmbeddingModel:
         self.model = kwargs.get("model")
         self.api_key = kwargs.get("api_key")
         self.base_url = kwargs.get("base_url")
-
+        # 创建一个 OpenAI 客户端，用于调用 OpenAI 的 API
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
